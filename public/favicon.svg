@@ -1,0 +1,13 @@
+<!-- public/favicon.svg -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1">
+      <stop offset="0" stop-color="#22d3ee"></stop>
+      <stop offset="1" stop-color="#10b981"></stop>
+    </linearGradient>
+  </defs>
+  <!-- shield -->
+  <path d="M32 6l20 8v14c0 14-10 24-20 30C22 52 12 42 12 28V14z" fill="url(#g)"></path>
+  <!-- sigma glyph -->
+  <path d="M22 20h20v4H28l10 8-10 8h14v4H22l14-12z" fill="#0b1020"></path>
+</svg>
