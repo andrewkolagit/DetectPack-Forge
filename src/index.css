@@ -127,7 +127,11 @@
   }
 
   html {
-    @apply dark;
+    color-scheme: dark;
+  }
+  
+  html.dark {
+    color-scheme: dark;
   }
 
   body {
@@ -219,15 +223,5 @@
 
   .status-error {
     @apply bg-destructive;
-  }
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply bg-background text-foreground;
   }
 }
