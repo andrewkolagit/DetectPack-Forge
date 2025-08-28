@@ -58,32 +58,36 @@ export default function Wizard() {
         await new Promise(resolve => setTimeout(resolve, 800));
       }
 
-      // In a real app, this would POST to N8N_WEBHOOK_URL
       const requestPayload = {
         mode: state.mode,
         [state.mode === 'describe' ? 'text' : 'logs']: state.input
       };
 
-      console.log('Would send to webhook:', requestPayload);
+      const { generateDetections } = await import('@/lib/api');
+      const data = await generateDetections(requestPayload);
 
-      // Navigate to results with a sample ID
-      navigate('/result/sample');
+      // Navigate to results with the generated data
+      navigate('/result/generated', { state: { data } });
       
       toast({
         title: "Detection pack generated!",
         description: "Your detection rules are ready to review.",
       });
 
-    } catch (error) {
+    } catch (error: any) {
+      const errorMessage = error.message?.includes('N8N_WEBHOOK_URL not configured') 
+        ? 'Backend not connected. Please configure N8N_WEBHOOK_URL environment variable.'
+        : 'Failed to generate detection pack. Please try again.';
+        
       setState(prev => ({ 
         ...prev, 
-        error: 'Failed to generate detection pack. Please try again.',
+        error: errorMessage,
         isLoading: false 
       }));
       
       toast({
         title: "Generation failed",
-        description: "Please try again or contact support.",
+        description: errorMessage,
         variant: "destructive"
       });
     }

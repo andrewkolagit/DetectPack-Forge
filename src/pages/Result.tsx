@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Download, ArrowLeft, FileText } from 'lucide-react';
+import { Download, ArrowLeft, FileText, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -16,6 +16,7 @@ import type { DetectionResult } from '@/types/detection';
 export default function Result() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   
   const [result, setResult] = useState<DetectionResult | null>(null);
@@ -28,15 +29,21 @@ export default function Result() {
       setError(null);
 
       try {
-        // Simulate loading delay
+        // Check if we have data from navigation state (real generation)
+        if (location.state?.data) {
+          setResult(location.state.data);
+          setIsLoading(false);
+          return;
+        }
+
+        // Simulate loading delay for sample data
         await new Promise(resolve => setTimeout(resolve, 1000));
 
-        // In a real app, this would fetch from an API
+        // Fallback to sample data
         if (id === 'sample') {
           setResult(SAMPLE_DETECTION);
         } else {
-          // For demo purposes, use sample data for any ID
-          setResult(SAMPLE_DETECTION);
+          setError('No detection data found. Please generate a new detection pack.');
         }
       } catch (err) {
         setError('Failed to load detection pack');
@@ -47,7 +54,7 @@ export default function Result() {
     };
 
     loadResult();
-  }, [id]);
+  }, [id, location.state]);
 
   const handleDownload = () => {
     if (!result) return;
@@ -81,6 +88,16 @@ export default function Result() {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto max-w-5xl px-6 py-12">
+          {error.includes('Backend not connected') && (
+            <Card className="mb-6 border-destructive bg-destructive/5 p-4">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+                <p className="text-sm text-destructive">
+                  Backend not connected. Set VITE_N8N_WEBHOOK_URL in your environment and reload.
+                </p>
+              </div>
+            </Card>
+          )}
           <Card className="border-destructive bg-destructive/5 p-8">
             <EmptyState
               icon={FileText}
