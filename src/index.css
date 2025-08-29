@@ -42,6 +42,8 @@
 
     --warning: 38 92% 50%;
     --warning-foreground: 220 13% 9%;
+    --warning-bg: 38 92% 15%;
+    --warning-border: 38 92% 25%;
 
     --border: 220 13% 15%;
     --input: 220 13% 15%;

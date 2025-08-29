@@ -20,7 +20,7 @@ export function HintChips({ meta }: HintChipsProps) {
       {meta.attack.map((technique, index) => (
         <motion.div
           key={technique}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-warning/10 px-3 py-1.5 text-sm font-medium text-warning-foreground ring-1 ring-warning/20"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-warning-bg px-3 py-1.5 text-sm font-medium text-warning ring-1 ring-warning-border"
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: index * 0.05 }}

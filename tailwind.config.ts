@@ -50,7 +50,9 @@ export default {
 				
 				warning: {
 					DEFAULT: 'hsl(var(--warning))',
-					foreground: 'hsl(var(--warning-foreground))'
+					foreground: 'hsl(var(--warning-foreground))',
+					bg: 'hsl(var(--warning-bg))',
+					border: 'hsl(var(--warning-border))'
 				},
 				
 				success: 'hsl(var(--success))',
