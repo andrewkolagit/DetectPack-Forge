@@ -1,3 +1,5 @@
+<img width="856" height="324" alt="image" src="https://github.com/user-attachments/assets/966d1685-a21a-47d2-a9ff-878ed6ace636" />
+
 # DetectPack Forge
 Turn plain-English behaviors or small log samples into production-ready detection packs — Sigma, KQL (Sentinel), and SPL (Splunk) — with tests and a short response playbook, all mapped to MITRE ATT&CK.
 
