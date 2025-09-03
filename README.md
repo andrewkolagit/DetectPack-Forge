@@ -1,4 +1,4 @@
-# Log-to-Sigma
+# DetectPack Forge
 
 ## Running Locally
 
