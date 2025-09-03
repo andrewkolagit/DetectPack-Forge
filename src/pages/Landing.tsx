@@ -63,9 +63,9 @@ export default function Landing() {
             </motion.div>
             
             <h1 className="mb-6 text-5xl font-bold tracking-tight text-foreground sm:text-6xl">
-              Natural Language →{" "}
+              DetectPack {" "}
               <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                Detection Packs
+                Forge
               </span>
             </h1>
             
