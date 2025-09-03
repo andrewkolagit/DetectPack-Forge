@@ -23,11 +23,11 @@ You describe a behavior (e.g., “many failed logons then a success”) or paste
 
 <img width="1427" height="670" alt="image" src="https://github.com/user-attachments/assets/3b57f04f-b0ba-4c7d-8512-1174c32466b1" />
 
-1. <b>Webhook (POST)</b> receives:
+1. 🛎️ <b>Webhook (POST)</b> receives:
    ```json
    { "mode": "describe" | "logs", "text": "string?", "logs": "string?" }
    ```
-2. <b>Preprocess Function</b> normalizes the body:
+2. 🧹 <b>Preprocess Function</b> normalizes the body:
    ```js
    // reads from $json.body and flattens to {mode,text,logs}
    const src = (items[0].json?.body ?? items[0].json ?? {});
@@ -38,7 +38,7 @@ You describe a behavior (e.g., “many failed logons then a success”) or paste
    if (!text && !logs) throw new Error('Provide either text or logs.');
    return [{ json: { mode, text, logs } }];
    ```
-3. <b>AI Agent – Schema (Gemini)</b> infers:
+3. 🧠 <b>AI Agent – Schema (Gemini)</b> infers:
    ```json
    {
      "logsource": { "product": "windows|aws|okta|...", "service": "security|cloudtrail|..." },
@@ -46,11 +46,11 @@ You describe a behavior (e.g., “many failed logons then a success”) or paste
      "techniques": [{ "id": "T1110", "confidence": "high" }]
    }
    ```
-4. <b>Parse Schema (Function)</b> safely parses the agent output and attaches it to the flow.
+4. 🧩 <b>Parse Schema (Function)</b> safely parses the agent output and attaches it to the flow.
 
-5. <b>AI Agent – Artifacts (Gemini)</b> creates Sigma/KQL/SPL/tests/playbook from the schema + inputs.
+5. 🧪 <b>AI Agent – Artifacts (Gemini)</b> creates Sigma/KQL/SPL/tests/playbook from the schema + inputs.
 
-6. <b>Return JSON</b> to the webhook caller:
+6. 📤 <b>Return JSON</b> to the webhook caller:
    ```json
    {
      "meta": { "title": "...", "slug": "...", "attack": ["Txxxx"], "logsource": { "product": "...", "service": "..." } },
@@ -78,11 +78,11 @@ To run the frontend locally and connect it to your backend or API, follow these 
 
 3. **Configure environment variables**
    - Create a `.env.local` file in the project root (if not present).
-   - Add any required variables, for example:
+   - Add any required variables, for example (n8n locally runs on the port 5678):
      ```
-     VITE_API_URL=http://localhost:3000
+     VITE_N8N_WEBHOOK_URL=http://localhost:5678
      ```
-   - Replace `http://localhost:3000` with your backend/API URL.
+   - Replace `http://localhost:5678` with your backend/API URL.
 
 4. **Start the development server**
    ```sh
@@ -91,7 +91,7 @@ To run the frontend locally and connect it to your backend or API, follow these 
    - The frontend will be available at [http://localhost:5173](http://localhost:5173) (default Vite port).
 
 5. **Connect to your backend**
-   - The n8nbackend .json file has been uploaded on the repo. All that is needed to do is take this file and import it into your new n8n workflow.
+   - The n8n backend .json file has been uploaded on the repo. All that is needed to do is take this file and import it into your new n8n workflow.
    - Ensure your backend is running and accessible at the URL specified in your `.env.local`.
    - The frontend will communicate with the backend using the configured API URL.
 
