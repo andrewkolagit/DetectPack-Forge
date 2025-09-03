@@ -1,0 +1,342 @@
+{
+  "name": "DetectForge - Backend",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "detectpack/new",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        0
+      ],
+      "id": "a33fe01a-62f3-41a1-b6df-58d6bd7af253",
+      "name": "Webhook",
+      "webhookId": "24fc400b-c95e-453d-818e-d40707b7ce5b"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Input from Webhook looks like: { headers, params, query, body: { mode, text, logs } }\nconst src = (items[0].json?.body ?? items[0].json ?? {});\n\n// Pull values safely\nlet modeRaw = String(src.mode ?? '').toLowerCase();\nconst text = typeof src.text === 'string' ? src.text : '';\nconst logs = typeof src.logs === 'string' ? src.logs : '';\n\n// Decide mode (prefer 'logs' if logs are present)\nconst mode = modeRaw === 'logs' || (logs && !text) ? 'logs' : 'describe';\n\n// Guardrails\nif (!text && !logs) {\n  throw new Error('Provide either a behavior description (text) or sample logs.');\n}\n\n// Return a clean, flat object for downstream nodes\nreturn [{ json: { mode, text, logs } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        128,
+        0
+      ],
+      "id": "3be12bd3-8495-439c-acc8-a5fd40b1f200",
+      "name": "Preprocess"
+    },
+    {
+      "parameters": {
+        "options": {
+          "temperature": 0.4,
+          "topK": 32,
+          "topP": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        800,
+        560
+      ],
+      "id": "5bad9d8a-63c7-43f8-b2c9-5d3d35a5a2ae",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "YQyWNxMJA6HQDyzg",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"logsource\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"product\": { \"type\": \"string\" },\n        \"service\": { \"type\": \"string\" }\n      },\n      \"required\": [\"product\",\"service\"]\n    },\n    \"fields\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"name\": { \"type\": \"string\" },\n          \"type\": { \"type\": \"string\" },\n          \"example\": { \"type\": \"string\" }\n        },\n        \"required\": [\"name\",\"type\"]\n      },\n      \"minItems\": 0\n    },\n    \"techniques\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"id\": { \"type\": \"string\" },\n          \"name\": { \"type\": \"string\" },\n          \"confidence\": { \"type\": \"string\", \"enum\": [\"low\",\"med\",\"high\"] },\n          \"why\": { \"type\": \"string\" }\n        },\n        \"required\": [\"id\",\"confidence\"]\n      },\n      \"minItems\": 1,\n      \"maxItems\": 3\n    }\n  },\n  \"required\": [\"logsource\",\"fields\",\"techniques\"]\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        592,
+        192
+      ],
+      "id": "ff451c1e-3194-471f-838c-855af7fb1a0d",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a senior detection engineer.\n\nTask: from a natural-language behavior description OR raw logs, infer:\n- the most likely log source (product + service),\n- key fields used to detect the behavior,\n- relevant MITRE ATT&CK techniques.\n\nSTRICT OUTPUT RULES\n- Respond with JSON ONLY. No markdown, no prose, no code fences.\n- Use double quotes, valid JSON, no trailing commas.\n- Keep values concise; prefer lower-case for logsource.\n- If uncertain, pick your best guess and set \"confidence\":\"low\".\n\nLOGSOURCE GUIDANCE (examples)\n- windows/security\n- windows/sysmon\n- linux/auth\n- okta/systemlog\n- o365/audit\n- aws/cloudtrail\n- azure/signinlogs\n- gcp/audit\n- cisco/asa\n- paloalto/panorama\n(Choose one most appropriate.)\n\nFIELDS GUIDANCE\n- 3–12 items typical for the logsource (e.g., EventID, TargetUserName, IpAddress, LogonType, Computer, SourceIP, UserAgent, Account, Outcome).\n- \"example\" is optional but helpful.\n\nATT&CK GUIDANCE\n- techniques[].id must be like \"T1110\" or \"T1110.003\".\n- Include 1–3 techniques max.\n- confidence ∈ {\"low\",\"med\",\"high\"}.\n- \"why\" = 1 brief sentence (optional).\n\nRESPONSE SHAPE (exact)\n{\n  \"logsource\": { \"product\": \"string\", \"service\": \"string\" },\n  \"fields\": [ { \"name\": \"string\", \"type\": \"string\", \"example\": \"string (optional)\" } ],\n  \"techniques\": [ { \"id\": \"string\", \"name\": \"string (optional)\", \"confidence\": \"low|med|high\", \"why\": \"string (optional)\" } ]\n}\n\nINPUT\nMODE: {{ $json.mode }}\nTEXT: {{ $json.text }}\nLOGS: {{ $json.logs }}\n\nReturn ONLY the JSON object described above.\n",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        336,
+        0
+      ],
+      "id": "7b4f333b-5dde-409e-9c2f-cf18cb6a042b",
+      "name": "AI Agent - Schema & ATT&CK"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get original inputs from the Preprocess node by name:\nconst pre = $item(0).$node[\"Preprocess\"].json;   // <-- make sure the name matches\n\n// AI Agent output from previous node:\nconst ai = items[0].json;\n\n// The agent may return the JSON as a string or as an object under different keys:\nlet raw = ai.message ?? ai.text ?? ai.data ?? ai.output ?? ai.response ?? ai;\nif (typeof raw !== 'string') raw = JSON.stringify(raw);\n\n// Parse (with a tiny fallback in case there's any wrapper text)\nlet schema;\ntry {\n  schema = JSON.parse(raw);\n} catch (e) {\n  const i = raw.indexOf('{'); const j = raw.lastIndexOf('}');\n  if (i < 0 || j < 0) throw new Error('No JSON object found in AI output');\n  schema = JSON.parse(raw.slice(i, j + 1));\n}\n\n// Minimal sanity\nif (!schema.logsource || !schema.techniques) throw new Error('Missing logsource/techniques');\n\n// Pass forward a flat object for the next step\nreturn [{\n  json: {\n    mode: pre.mode,\n    text: pre.text,\n    logs: pre.logs,\n    schema\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        816,
+        0
+      ],
+      "id": "40a6578b-fd41-4379-9593-3bc2245522c1",
+      "name": "Code - Merge 1 & 2"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=ROLE: Senior detection engineer.\n\nTASK: Convert the given intent/logs + inferred schema into PRODUCTION-READY artifacts:\n- Sigma (YAML) with ATT&CK tags (e.g., attack.T1110), falsepositives, level, fields, logsource.\n- KQL (Microsoft Sentinel) logically equivalent to Sigma.\n- SPL (Splunk) logically equivalent to Sigma.\n- tests: positive[] and negative[] example cases (strings).\n- playbook: short markdown checklist of response steps.\n\nSTRICT OUTPUT RULES\n- Output JSON ONLY (no prose, no markdown outside the JSON, no code fences).\n- Use the EXACT response shape shown below.\n- Do NOT invent table or field names that contradict SCHEMA_RESULT; prefer fields listed there.\n- Prefer time-window + thresholds over exact counts when appropriate.\n- Generalize (no hard-coded IPs/users unless they are part of the actual logic).\n- Keep queries readable; avoid vendor-heavy functions (e.g., Splunk `transaction`) unless essential.\n\nCONSISTENCY REQUIREMENTS\n- The Sigma logic, KQL, and SPL MUST be logically equivalent (same window, same grouping keys).\n- Sigma:\n  - Use 2-space indentation, no tabs.\n  - Include: title, id (use slug), status: experimental, logsource from SCHEMA_RESULT.logsource,\n    detection with named selections, timeframe, condition, fields (top 5–10 from SCHEMA_RESULT.fields),\n    falsepositives, level, tags (attack.Txxxx from meta.attack).\n- KQL:\n  - Start by choosing a sensible table for the logsource:\n      windows/security → SecurityEvent\n      aws/cloudtrail   → AWSCloudTrail (fallback: CloudTrail)\n      okta/systemlog   → OktaSystemLog (fallback: Okta)\n      linux/auth       → Syslog\n  - Define a variable `let timeframe = 5m .. 15m;` and use `bin(TimeGenerated, timeframe)` when aggregating.\n  - Avoid undefined variables or functions; don’t reference lists you didn’t define.\n- SPL:\n  - Use `search` or `where in(...)` for event filtering; then `bin _time span=<timeframe>` and `stats count(eval(...)) by <keys>`.\n  - Avoid `transaction` unless absolutely necessary.\n\nTESTS & PLAYBOOK\n- tests.positive: at least 2 single-line examples that SHOULD trigger (plain descriptions or single JSON log lines).\n- tests.negative: at least 2 examples that SHOULD NOT trigger; do NOT combine multiple events into one string.\n- playbook: 5–8 concise bullets (triage, investigation, verification, containment, analysis, documentation, recovery actions). No links needed.\n\nINPUTS\nSCHEMA_RESULT:\n{{ JSON.stringify($json.schema) }}\n\nINTENT_OR_LOGS:\n{{ $json.text || '' }}\n{{ $json.logs || '' }}\n\nRESPONSE SHAPE (exact):\n{\n  \"meta\": {\n    \"title\": \"string\",\n    \"slug\": \"kebab-case\",\n    \"attack\": [\"Txxxx\"],\n    \"logsource\": { \"product\": \"string\", \"service\": \"string\" }\n  },\n  \"sigma\": \"string (valid YAML)\",\n  \"kql\": \"string\",\n  \"spl\": \"string\",\n  \"tests\": { \"positive\": [\"string\"], \"negative\": [\"string\"] },\n  \"playbook\": \"string (markdown)\"\n}\n\nReturn ONLY that JSON object.\n\nReturn ONLY valid JSON (no prose, no code fences).\nBegin the response with \"{\" and end it with \"}\".\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        1168,
+        0
+      ],
+      "id": "b7560a95-d06d-4597-b8bf-a0a83f6ef10b",
+      "name": "AI Agent - Artifacts"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Robust JSON extraction from AI Agent output\nconst ai = items[0].json;\n\n// common places n8n model nodes stick the text/object\nlet raw = ai.message ?? ai.text ?? ai.data ?? ai.output ?? ai.response ?? ai;\n// force string\nif (typeof raw !== 'string') raw = JSON.stringify(raw);\n\n// strip accidental code fences\nraw = raw.replace(/^\\s*```(?:json)?/i, '').replace(/```$/,'').trim();\n\n// parse; fallback to first { ... last }\nlet out;\ntry {\n  out = JSON.parse(raw);\n} catch (e) {\n  const s = raw;\n  const i = s.indexOf('{'), j = s.lastIndexOf('}');\n  if (i >= 0 && j > i) out = JSON.parse(s.slice(i, j + 1));\n  else throw new Error('Artifacts JSON parse failed: ' + e.message);\n}\n\n// minimal normalization/guarantees\nout.meta = out.meta ?? {};\nif (!out.meta.slug && out.meta.title) {\n  out.meta.slug = out.meta.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');\n}\nif (!Array.isArray(out.meta.attack)) out.meta.attack = [];\nfor (const k of ['sigma','kql','spl','playbook']) {\n  if (typeof out[k] !== 'string') out[k] = String(out[k] ?? '');\n}\nif (!out.tests) out.tests = { positive: [], negative: [] };\nout.tests.positive = Array.isArray(out.tests.positive) ? out.tests.positive : [];\nout.tests.negative = Array.isArray(out.tests.negative) ? out.tests.negative : [];\n\n// done — return exactly what the UI expects\nreturn [{ json: out }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1472,
+        0
+      ],
+      "id": "43a62a17-1e3a-4a29-adc1-29dac59bb703",
+      "name": "Normalize Artifacts"
+    },
+    {
+      "parameters": {
+        "content": "## Webhook\nEntry point: Set to POST Method so that it receives user input and returns final artifacts at the end of the flow.",
+        "height": 128,
+        "width": 288,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -256,
+        -160
+      ],
+      "typeVersion": 1,
+      "id": "a9abfb47-57cd-4bda-8ee2-092c97cfa6ef",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Preprocess\nRead from {{$json.body}} (or fallback to {{$json}}), flatten to top-level fields.",
+        "height": 112,
+        "width": 288,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        32,
+        144
+      ],
+      "typeVersion": 1,
+      "id": "59e3c5b1-14c4-4b8f-8370-83ea8a99dbf4",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## AI Agent - Schema & MITRE ATT&CK\nFrom behavior/logs, infer logsource, key fields, MITRE ATT&CK.",
+        "height": 144,
+        "width": 288,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        304,
+        -176
+      ],
+      "typeVersion": 1,
+      "id": "4ef36cc7-b951-44b9-a399-df1ac24a4bce",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Parse Schema + Attach Inputs\nTolerant parse of the Schema agent’s output; carry forward original inputs.",
+        "height": 144,
+        "width": 288,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        736,
+        144
+      ],
+      "typeVersion": 1,
+      "id": "0ae059f7-976e-41b1-9e90-e3f106fe5a50",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## AI Model\nUsing the Google Gemini AI model to run into the AI Agent.",
+        "height": 112,
+        "width": 288,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        944,
+        528
+      ],
+      "typeVersion": 1,
+      "id": "88810491-6c28-4725-91ef-a6fa4a2150ca",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## AI Agent - Artifacts (Gemini)\nGenerate Sigma, KQL, SPL, tests, playbook from schema + inputs.",
+        "height": 144,
+        "width": 288,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1136,
+        -176
+      ],
+      "typeVersion": 1,
+      "id": "6aa0869f-2746-4cde-bc4d-55a142bb5e03",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "## Normalize Artifacts (robust JSON)\nRobustly parse the agent output and enforce required keys/types.",
+        "height": 144,
+        "width": 288,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1392,
+        144
+      ],
+      "typeVersion": 1,
+      "id": "afc1861f-1395-4cc6-b117-b1a843a0c526",
+      "name": "Sticky Note6"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Preprocess",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preprocess": {
+      "main": [
+        [
+          {
+            "node": "AI Agent - Schema & ATT&CK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent - Schema & ATT&CK",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "AI Agent - Artifacts",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent - Schema & ATT&CK",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent - Schema & ATT&CK": {
+      "main": [
+        [
+          {
+            "node": "Code - Merge 1 & 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Merge 1 & 2": {
+      "main": [
+        [
+          {
+            "node": "AI Agent - Artifacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent - Artifacts": {
+      "main": [
+        [
+          {
+            "node": "Normalize Artifacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionTimeout": -1,
+    "errorWorkflow": "AEVbcJWIXoxTyqi9"
+  },
+  "versionId": "312464e6-912e-42c6-9653-86249643371d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6ee7e8f0fba8f2d0725111e46e96eea91c41b7df4c682d10fd9318b11e2ef1ee"
+  },
+  "id": "AEVbcJWIXoxTyqi9",
+  "tags": []
+}
