@@ -77,7 +77,7 @@ To run the frontend locally and connect it to your backend or API, follow these 
    ```
 
 3. **Configure environment variables**
-   - Create a `.env.local` file in the project root (if not present).
+   - A `.env.local` file is already present in the project root, and if not just make one.
    - Use the url provided at the n8n webhook over here, for example:
      ```
      VITE_N8N_WEBHOOK_URL=http://localhost:5678/webhook/detectpack/1
