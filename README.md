@@ -1,4 +1,4 @@
- DetectPack Forge
+# DetectPack Forge
 Turn plain-English behaviors or small log samples into production-ready detection packs — Sigma, KQL (Sentinel), and SPL (Splunk) — with tests and a short response playbook, all mapped to MITRE ATT&CK.
 
 ## What is this?
