@@ -1,4 +1,4 @@
-# DetectPack Forge
+ DetectPack Forge
 Turn plain-English behaviors or small log samples into production-ready detection packs — Sigma, KQL (Sentinel), and SPL (Splunk) — with tests and a short response playbook, all mapped to MITRE ATT&CK.
 
 ## What is this?
@@ -91,7 +91,8 @@ To run the frontend locally and connect it to your backend or API, follow these 
    - The frontend will be available at [http://localhost:5173](http://localhost:5173) (default Vite port).
 
 5. **Connect to your backend**
-   - Ensure your backend/API is running and accessible at the URL specified in your `.env.local`.
+   - The n8nbackend .json file has been uploaded on the repo. All that is needed to do is take this file and import it into your new n8n workflow.
+   - Ensure your backend is running and accessible at the URL specified in your `.env.local`.
    - The frontend will communicate with the backend using the configured API URL.
 
 **Note:**  
